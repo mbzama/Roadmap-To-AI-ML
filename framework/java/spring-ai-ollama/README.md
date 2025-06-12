@@ -19,7 +19,11 @@ Before running the application, ensure you have:
 - **Java 21** or higher
 - **Maven 3.6+** 
 - **Ollama** installed and running locally
-- At least **4GB RAM** available for Ollama models
+- **Hardware Requirements for TinyLlama**:
+  - **Minimum**: 2GB RAM, 2GB free disk space
+  - **Recommended**: 4GB RAM, 4GB free disk space
+  - **CPU**: Any modern processor (Intel/AMD x64 or Apple Silicon)
+  - **GPU**: Optional (CUDA/ROCm for faster inference)
 
 ## 🛠️ Installation & Setup
 
@@ -51,7 +55,7 @@ curl -fsSL https://ollama.ai/install.sh | sh
 ollama serve
 
 # In another terminal, pull the required model
-ollama pull gemma3:1b
+ollama pull tinyllama
 ```
 
 ### 3. Clone and Setup Project
@@ -108,7 +112,7 @@ Key configuration options in `src/main/resources/application.properties`:
 ```properties
 # Ollama Configuration
 spring.ai.ollama.base-url=http://localhost:11434
-spring.ai.ollama.chat.model=gemma3:1b
+spring.ai.ollama.chat.model=tinyllama
 
 # Server Configuration
 server.port=8080
@@ -122,15 +126,22 @@ logging.level.zama.learning.spring.ai.ollama=DEBUG
 You can change the model in `application.properties`. Popular options:
 
 ```bash
-# Pull different models
-ollama pull gemma3:1b         # Default - Fast and efficient 1B parameter model
-ollama pull gemma3:7b         # Larger 7B parameter version
-ollama pull llama3.1          # Alternative - Good balance of speed and quality
-ollama pull llama3.1:8b       # 8B parameter version
-ollama pull codellama         # Code-focused model
-ollama pull mistral           # Alternative model
-ollama pull phi3              # Microsoft's smaller, faster model
+# Pull different models (ordered by resource requirements - lightest to heaviest)
+ollama pull tinyllama        # Default - Ultra-lightweight 1.1B params (~1GB RAM)
+ollama pull phi3:mini        # Microsoft's efficient 3.8B params (~2.5GB RAM)
+ollama pull gemma2:2b        # Google's 2B parameter model (~2GB RAM)
+ollama pull llama3.2:3b      # Meta's 3B parameter model (~3GB RAM)
+ollama pull gemma2:9b        # Google's 9B parameter model (~6GB RAM)
+ollama pull llama3.1:8b      # Meta's 8B parameter model (~6GB RAM)
+ollama pull codellama        # Code-focused model (~7GB RAM)
+ollama pull mistral          # Mistral 7B model (~5GB RAM)
 ```
+
+**Model Recommendations by Hardware:**
+- **2-4GB RAM**: `tinyllama`, `phi3:mini`
+- **4-6GB RAM**: `gemma2:2b`, `llama3.2:3b`
+- **6-8GB RAM**: `gemma2:9b`, `llama3.1:8b`, `mistral`
+- **8GB+ RAM**: Any model including larger variants
 
 ## 📡 API Endpoints
 
@@ -234,10 +245,10 @@ Error: Connection refused to localhost:11434
 
 **2. Model Not Found**
 ```
-Error: Model gemma3:1b not found
+Error: Model tinyllama not found
 ```
 **Solution**:
-- Pull the model: `ollama pull gemma3:1b`
+- Pull the model: `ollama pull tinyllama`
 - Check available models: `ollama list`
 - Update model name in `application.properties`
 
@@ -246,9 +257,10 @@ Error: Model gemma3:1b not found
 Error: Failed to load model
 ```
 **Solution**:
-- Use a smaller model (e.g., `phi3`)
+- Use a smaller model (e.g., `tinyllama` - only ~1GB RAM required)
 - Increase available system memory
 - Close other memory-intensive applications
+- Consider using `phi3:mini` for better performance with low memory
 
 **4. Port Already in Use**
 ```

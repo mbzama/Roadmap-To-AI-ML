@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama Chatbot - Google ADK Integration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid h-100">
+        <div class="row h-100">
+            <!-- Header -->
+            <div class="col-12 bg-primary text-white p-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-robot me-2"></i>
+                        Ollama Chatbot with Google ADK
+                    </h1>
+                    <small class="text-light">Powered by Spring Boot & Local LLM</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="Toggle Dark Mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" onclick="exportChat()" title="Export Chat">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <span id="status-indicator" class="status-indicator status-offline" title="Checking connection..."></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row flex-grow-1">
+            <!-- Chat Area -->
+            <div class="col-12 d-flex flex-column">
+                <!-- Chat Messages -->
+                <div class="flex-grow-1 overflow-auto p-3" id="chatMessages">
+                    <div th:if="${chatHistory != null and !chatHistory.isEmpty()}">
+                        <div th:each="message : ${chatHistory}" 
+                             th:class="${message.role == 'user'} ? 'mb-3 d-flex justify-content-end' : 'mb-3 d-flex justify-content-start'">
+                            <div th:class="${message.role == 'user'} ? 'bg-primary text-white p-3 rounded-start rounded-bottom max-width-70' : 'bg-light p-3 rounded-end rounded-bottom max-width-70'">
+                                <div class="small text-muted mb-1" th:if="${message.role == 'assistant'}">
+                                    <i class="fas fa-robot me-1"></i>
+                                    Assistant <span th:if="${message.model}" th:text="'(' + ${message.model} + ')'"></span>
+                                </div>
+                                <div class="small text-light mb-1" th:if="${message.role == 'user'}">
+                                    <i class="fas fa-user me-1"></i>
+                                    You
+                                </div>
+                                <div th:text="${message.content}"></div>
+                                <div class="small mt-1 opacity-75" th:text="${#temporals.format(message.timestamp, 'HH:mm')}"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div th:if="${chatHistory == null or chatHistory.isEmpty()}" class="text-center text-muted mt-5">
+                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <h4>Welcome to Ollama Chatbot!</h4>
+                        <p>Start a conversation by typing a message below.</p>
+                        <div class="alert alert-info mt-3">
+                            <strong>Requirements:</strong> Make sure Ollama is running locally on port 11434 with a model like 'tinyllama' installed.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Message Input Form -->
+                <div class="border-top p-3 bg-light">
+                    <form th:action="@{/chat}" th:object="${chatRequest}" method="post" class="d-flex gap-2">
+                        <div class="flex-grow-1">
+                            <div class="input-group">
+                                <input type="text" 
+                                       th:field="*{message}" 
+                                       class="form-control form-control-lg" 
+                                       placeholder="Type your message here..." 
+                                       required
+                                       autocomplete="off">
+                                <input type="hidden" th:field="*{model}" th:value="${@environment.getProperty('ollama.model', 'tinyllama')}">
+                            </div>
+                            <div th:if="${#fields.hasErrors('message')}" class="text-danger small mt-1">
+                                <span th:errors="*{message}"></span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane"></i>
+                            Send
+                        </button>
+                    </form>
+                    
+                    <!-- Model Selection and Controls -->
+                    <div class="mt-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <small class="text-muted">
+                            <i class="fas fa-brain me-1"></i>
+                            Model: <strong th:text="${@environment.getProperty('ollama.model', 'tinyllama')}">tinyllama</strong>
+                            <span class="ms-2 d-none d-md-inline">
+                                <kbd>Ctrl+K</kbd> Clear |
+                                <kbd>Ctrl+L</kbd> Focus |
+                                <kbd>Ctrl+S</kbd> Export |
+                                <kbd>Ctrl+F</kbd> Search |
+                                <kbd>Ctrl+T</kbd> Theme |
+                                <kbd>↑/↓</kbd> History
+                            </span>
+                        </small>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearChat()" title="Clear Chat (Ctrl+K)">
+                                <i class="fas fa-trash me-1"></i>Clear
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-info" onclick="checkHealth()" title="Check Ollama Status">
+                                <i class="fas fa-heartbeat me-1"></i>Health
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="showChatStats()" title="Chat Statistics (Ctrl+I)">
+                                <i class="fas fa-chart-bar me-1"></i>Stats
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/chat.js}"></script>
+    
+    <script>
+        // Auto-scroll to bottom
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+        
+        // Clear chat function
+        function clearChat() {
+            fetch('/api/chat/history', { method: 'DELETE' })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    location.reload();
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        // Health check function
+        function checkHealth() {
+            fetch('/health')
+                .then(response => response.text())
+                .then(data => {
+                    alert('✅ ' + data);
+                })
+                .catch(error => {
+                    alert('❌ Service unavailable');
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>

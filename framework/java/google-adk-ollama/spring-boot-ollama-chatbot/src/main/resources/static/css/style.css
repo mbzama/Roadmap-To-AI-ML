@@ -1,0 +1,24 @@
+/* Custom styles for Ollama Chatbot */
+
+body {
+    height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.container-fluid {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.max-width-70 {
+    max-width: 70%;
+}
+
+#chatMessages {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+    background: white;
+}

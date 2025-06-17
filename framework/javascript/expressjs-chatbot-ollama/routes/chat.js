@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ollamaService = require('../services/ollamaService');
 
-// Store conversation history in memory (in production, use a database)
+// Store conversation history in memory (in production, use a database)  
 const conversations = new Map();
 
 /**

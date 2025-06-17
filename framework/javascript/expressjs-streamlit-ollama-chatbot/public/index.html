@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Express Ollama Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>AI Chatbot</h1>
+            <p>Powered by Ollama & Express.js</p>
+            <div class="header-controls">
+                <button id="settingsBtn" class="control-btn" title="Settings">⚙️</button>
+                <button id="clearBtn" class="control-btn" title="Clear conversation (Ctrl+K)">🗑️</button>
+                <button id="helpBtn" class="control-btn" title="Keyboard shortcuts">❓</button>
+            </div>
+        </header>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>Hello! I'm your AI assistant. How can I help you today?</p>
+                    </div>
+                    <div class="message-time" id="initialTime"></div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <form id="chatForm" class="chat-form">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Type your message here..." 
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" id="sendButton">
+                        <span>Send</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="status-indicator" id="statusIndicator">
+            <span class="status-dot"></span>
+            <span class="status-text">Ready</span>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <span class="close" id="closeSettings">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-item">
+                        <label for="streamingToggle">
+                            <input type="checkbox" id="streamingToggle" checked>
+                            Enable streaming responses
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label for="conversationId">Conversation ID:</label>
+                        <input type="text" id="conversationId" value="default" placeholder="Enter conversation ID">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Modal -->
+        <div id="helpModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Keyboard Shortcuts</h3>
+                    <span class="close" id="closeHelp">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="shortcut-list">
+                        <div class="shortcut-item">
+                            <kbd>Enter</kbd> - Send message
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Retry last message
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>K</kbd> - Clear conversation
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl</kbd> + <kbd>S</kbd> - Toggle streaming
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Esc</kbd> - Focus input field
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

@@ -477,9 +477,6 @@ dist
 .cache/
 */.cache/
 */*/.cache/
-public
-*/public
-*/*/public
 
 # Storybook build outputs
 .out

@@ -129,17 +129,22 @@ dmypy.json
 .pyre/
 
 # Machine Learning / Data Science specific
-*.pkl
-*.pickle
-*.h5
-*.hdf5
+# *.pickle  # Commented out to allow required .pkl files
+# *.hdf5    # Commented out to allow required .h5 model files
 *.joblib
-models/
+# models/   # Commented out to allow model files
 checkpoints/
-logs/
+# logs/     # Commented out - may need logs for debugging
 runs/
 tensorboard_logs/
 wandb/
+
+# Specific files to track for deployment
+!ann_model.h5
+!*.pkl
+!scaler.pkl
+!label_encoder_gender.pkl
+!one_hot_encoder_geography.pkl
 
 # Dataset files (uncomment if you don't want to track large datasets)
 # *.csv

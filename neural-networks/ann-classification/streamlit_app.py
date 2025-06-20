@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
+import os
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
@@ -18,6 +19,38 @@ st.set_page_config(
 def load_model_and_preprocessors():
     """Load the trained model and preprocessing objects"""
     try:
+        # Check if files exist
+        required_files = {
+            'ann_model.h5': 'Trained ANN model',
+            'label_encoder_gender.pkl': 'Gender label encoder',
+            'one_hot_encoder_geography.pkl': 'Geography one-hot encoder',
+            'scaler.pkl': 'Feature scaler'
+        }
+        
+        missing_files = []
+        for file, description in required_files.items():
+            if not os.path.exists(file):
+                missing_files.append(f"{file} ({description})")
+        
+        if missing_files:
+            st.error("❌ Missing required files for prediction:")
+            for file in missing_files:
+                st.error(f"   • {file}")
+            st.info("""
+            **Deployment Issue**: Model files are missing from the repository.
+            
+            **To fix this**:
+            1. Ensure model files are not in .gitignore
+            2. Add model files to your repository:
+               - ann_model.h5
+               - label_encoder_gender.pkl
+               - one_hot_encoder_geography.pkl  
+               - scaler.pkl
+            3. Commit and push to your repository
+            4. Redeploy to Streamlit Cloud
+            """)
+            return None, None, None, None
+        
         # Load the model
         model = load_model('ann_model.h5')
         
@@ -33,7 +66,7 @@ def load_model_and_preprocessors():
         
         return model, label_encoder_gender, one_hot_encoder_geography, scaler
     except Exception as e:
-        st.error(f"Error loading model or preprocessors: {e}")
+        st.error(f"❌ Error loading model or preprocessors: {e}")
         return None, None, None, None
 
 def preprocess_input(data, label_encoder_gender, one_hot_encoder_geography, scaler):

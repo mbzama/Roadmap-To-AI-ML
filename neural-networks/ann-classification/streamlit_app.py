@@ -3,8 +3,14 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+import sys
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+import warnings
+
+# Suppress TensorFlow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+warnings.filterwarnings('ignore')
 
 # Set page configuration
 st.set_page_config(
@@ -49,10 +55,73 @@ def load_model_and_preprocessors():
             3. Commit and push to your repository
             4. Redeploy to Streamlit Cloud
             """)
-            return None, None, None, None
+            return None, None, None, None        # Load the model with error handling for version compatibility
+        model = None
+        # Try models in order of preference: Python 3.13 > rebuilt > newer format > original
+        model_paths = [
+            'ann_model_py313.keras',     # Python 3.13 optimized
+            'ann_model_py313.h5',        # Python 3.13 backup
+            'ann_model_rebuilt.keras',   # General rebuilt
+            'ann_model_rebuilt.h5',      # General rebuilt backup
+            'ann_model.keras',           # Converted original
+            'ann_model.h5'               # Original
+        ]
         
-        # Load the model
-        model = load_model('ann_model.h5')
+        for model_path in model_paths:
+            if os.path.exists(model_path):
+                try:
+                    st.info(f"🔄 Attempting to load model from {model_path}...")
+                    
+                    # Use compile=False for better compatibility
+                    model = load_model(model_path, compile=False)
+                    
+                    # Recompile with Python 3.13 compatible settings
+                    compile_kwargs = {
+                        'optimizer': 'adam',
+                        'loss': 'binary_crossentropy',
+                        'metrics': ['accuracy']
+                    }
+                    
+                    # Enhanced optimizer for Python 3.13 if available
+                    try:
+                        if hasattr(tf.keras.optimizers, 'Adam'):
+                            compile_kwargs['optimizer'] = tf.keras.optimizers.Adam(
+                                learning_rate=0.001,
+                                beta_1=0.9,
+                                beta_2=0.999,
+                                epsilon=1e-7
+                            )
+                    except:
+                        pass  # Fall back to string optimizer
+                    
+                    model.compile(**compile_kwargs)
+                    st.success(f"✅ Model loaded successfully from {model_path}")
+                    break
+                    
+                except Exception as model_error:
+                    st.warning(f"⚠️ Failed to load {model_path}: {str(model_error)[:100]}...")
+                    continue
+        
+        if model is None:
+            st.error("❌ Failed to load model from any available format")
+            st.info(f"""
+            **Model Loading Solutions for Python 3.13**:
+            
+            1. **Create Python 3.13 Compatible Model** (Recommended):
+               - Run: `python rebuild_model_py313.py`
+               - This creates a model optimized for Python 3.13
+            
+            2. **Version Information**:
+               - Current TensorFlow: {tf.__version__}
+               - Python 3.13 requires: TensorFlow >= 2.16.0
+               - Recommended: TensorFlow >= 2.17.0
+            
+            3. **Available Files**: {[f for f in os.listdir('.') if f.endswith(('.h5', '.keras'))]}
+            
+            **For Python 3.13**: Use the rebuild script to ensure full compatibility
+            with the latest Python version and TensorFlow optimizations.
+            """)
+            return None, None, None, None
         
         # Load the preprocessors
         with open('label_encoder_gender.pkl', 'rb') as file:
@@ -65,39 +134,65 @@ def load_model_and_preprocessors():
             scaler = pickle.load(file)
         
         return model, label_encoder_gender, one_hot_encoder_geography, scaler
+    
     except Exception as e:
         st.error(f"❌ Error loading model or preprocessors: {e}")
+        st.error(f"**Error details**: {str(e)}")
+        st.info(f"""
+        **Debug Information**:
+        - TensorFlow version: {tf.__version__}
+        - Current working directory: {os.getcwd()}
+        - Available files: {os.listdir('.')}
+        
+        **Troubleshooting Steps**:
+        1. Ensure all model files are present in the deployment
+        2. Check TensorFlow version compatibility (currently using {tf.__version__})
+        3. Consider re-training and saving the model with the current TensorFlow version
+        4. Use native Keras format (.keras) instead of HDF5 (.h5) for better compatibility
+        """)
         return None, None, None, None
 
 def preprocess_input(data, label_encoder_gender, one_hot_encoder_geography, scaler):
-    """Preprocess input data for prediction"""
-    # Create a copy of the input data
-    processed_data = data.copy()
-    
-    # Encode Gender
-    processed_data['Gender'] = label_encoder_gender.transform([processed_data['Gender']])[0]
-    
-    # One-hot encode Geography
-    geography_encoded = one_hot_encoder_geography.transform([[processed_data['Geography']]])
-    geography_encoded_df = pd.DataFrame(
-        geography_encoded.toarray(), 
-        columns=one_hot_encoder_geography.get_feature_names_out(['Geography'])
-    )
-    
-    # Remove Geography from the dictionary
-    geography_value = processed_data.pop('Geography')
-    
-    # Convert to DataFrame for easier manipulation
-    df = pd.DataFrame([processed_data])
-    
-    # Add geography encoded columns
-    for col in geography_encoded_df.columns:
-        df[col] = geography_encoded_df[col].iloc[0]
-    
-    # Scale the features
-    scaled_data = scaler.transform(df)
-    
-    return scaled_data
+    """Preprocess input data for prediction with enhanced data type handling"""
+    try:
+        # Create a copy of the input data
+        processed_data = data.copy()
+        
+        # Encode Gender
+        processed_data['Gender'] = label_encoder_gender.transform([processed_data['Gender']])[0]
+        
+        # One-hot encode Geography
+        geography_encoded = one_hot_encoder_geography.transform([[processed_data['Geography']]])
+        geography_encoded_df = pd.DataFrame(
+            geography_encoded.toarray(), 
+            columns=one_hot_encoder_geography.get_feature_names_out(['Geography'])
+        )
+        
+        # Remove Geography from the dictionary
+        geography_value = processed_data.pop('Geography')
+        
+        # Convert to DataFrame for easier manipulation
+        df = pd.DataFrame([processed_data])
+        
+        # Add geography encoded columns - ensure they are numeric
+        for col in geography_encoded_df.columns:
+            df[col] = float(geography_encoded_df[col].iloc[0])
+        
+        # Ensure all columns are numeric before scaling
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # Check for any NaN values that might have been introduced
+        if df.isnull().any().any():
+            raise ValueError("NaN values found after preprocessing - check input data types")
+        
+        # Scale the features
+        scaled_data = scaler.transform(df)
+        
+        return scaled_data
+        
+    except Exception as e:
+        raise ValueError(f"Error in preprocessing: {str(e)}")
 
 def main():
     # Title and description
@@ -106,6 +201,31 @@ def main():
     This application uses an Artificial Neural Network (ANN) to predict whether a bank customer 
     is likely to churn (leave the bank) based on their profile and banking behavior.
     """)
+      # Show system information in an expander
+    with st.expander("🔧 System Information", expanded=False):
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        st.write(f"**Python Version**: {python_version}")
+        st.write(f"**TensorFlow Version**: {tf.__version__}")
+        st.write(f"**Streamlit Version**: {st.__version__}")
+        
+        # Check for Python 3.13 compatibility
+        if sys.version_info >= (3, 13):
+            st.success("✅ Running on Python 3.13+ - Optimized compatibility")
+            st.info("💡 For best performance, ensure you're using the Python 3.13 optimized model")
+        elif sys.version_info >= (3, 11):
+            st.info("ℹ️ Running on Python 3.11+ - Good compatibility")
+        else:
+            st.warning("⚠️ Older Python version detected - consider upgrading")
+        
+        model_files = [f for f in os.listdir('.') if f.endswith(('.h5', '.keras'))]
+        st.write(f"**Available Model Files**: {model_files}")
+        
+        # Highlight Python 3.13 optimized models
+        py313_models = [f for f in model_files if 'py313' in f]
+        if py313_models:
+            st.success(f"🚀 Python 3.13 optimized models available: {py313_models}")
+        elif sys.version_info >= (3, 13):
+            st.info("💡 Consider running `python rebuild_model_py313.py` for optimal Python 3.13 performance")
     
     # Load model and preprocessors
     model, label_encoder_gender, one_hot_encoder_geography, scaler = load_model_and_preprocessors()
@@ -221,8 +341,7 @@ def main():
               # Make prediction
             prediction_prob = float(model.predict(processed_input)[0][0])
             prediction = 1 if prediction_prob > 0.5 else 0
-            
-            # Display results
+              # Display results
             col1, col2 = st.columns(2)
             
             with col1:
@@ -230,12 +349,22 @@ def main():
                 profile_df = pd.DataFrame({
                     'Feature': ['Credit Score', 'Geography', 'Gender', 'Age', 'Tenure', 
                                'Balance', 'Products', 'Credit Card', 'Active Member', 'Salary'],
-                    'Value': [credit_score, geography, gender, age, f"{tenure} years",
-                             f"${balance:,.2f}", num_of_products, 
-                             "Yes" if has_cr_card else "No",
-                             "Yes" if is_active_member else "No",
-                             f"${estimated_salary:,.2f}"]
+                    'Value': [
+                        str(credit_score), 
+                        str(geography), 
+                        str(gender), 
+                        str(age), 
+                        f"{tenure} years",
+                        f"${balance:,.2f}", 
+                        str(num_of_products), 
+                        "Yes" if has_cr_card else "No",
+                        "Yes" if is_active_member else "No",
+                        f"${estimated_salary:,.2f}"
+                    ]
                 })
+                
+                # Ensure all columns are string type to avoid Arrow conversion issues
+                profile_df = profile_df.astype(str)
                 st.dataframe(profile_df, use_container_width=True)
             
             with col2:
@@ -308,23 +437,33 @@ def main():
         - Standard Scaling for numerical features
         - Feature normalization applied
         """)
-    
-    # Model performance section
+      # Model performance section
     st.subheader("Sample Predictions")
     if st.button("Show Sample Predictions"):
         try:
             # Load and display sample predictions
             sample_predictions = pd.read_csv('predictions.csv')
             
+            # Ensure proper data types to avoid Arrow conversion issues
+            for col in sample_predictions.columns:
+                if sample_predictions[col].dtype == 'object':
+                    sample_predictions[col] = sample_predictions[col].astype(str)
+                else:
+                    # Convert numeric columns to float to ensure consistency
+                    sample_predictions[col] = pd.to_numeric(sample_predictions[col], errors='coerce')
+            
             # Show first 10 predictions
             st.dataframe(sample_predictions.head(10), use_container_width=True)
             
-            # Calculate accuracy
-            accuracy = (sample_predictions['Actual'] == sample_predictions['Predicted']).mean()
-            st.metric("Model Accuracy on Test Set", f"{accuracy:.2%}")
+            # Calculate accuracy if Actual and Predicted columns exist
+            if 'Actual' in sample_predictions.columns and 'Predicted' in sample_predictions.columns:
+                accuracy = (sample_predictions['Actual'] == sample_predictions['Predicted']).mean()
+                st.metric("Model Accuracy on Test Set", f"{accuracy:.2%}")
             
+        except FileNotFoundError:
+            st.warning("Sample predictions file (predictions.csv) not found.")
         except Exception as e:
-            st.warning("Sample predictions file not found or could not be loaded.")
+            st.warning(f"Could not load sample predictions: {str(e)}")
 
 if __name__ == "__main__":
     main()

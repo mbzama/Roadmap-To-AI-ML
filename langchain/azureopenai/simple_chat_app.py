@@ -12,10 +12,6 @@ deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 subscription_key = os.getenv("AZURE_OPENAI_API_KEY")
 api_version = os.getenv("AZURE_OPENAI_API_VERSION")
 
-print(f"Using endpoint: {endpoint}")
-print(f"Using model: {model_name}")     
-print(f"Using deployment: {deployment}")
-print(f"Using subscription_key: {subscription_key}")
 
 print("-------------------------------------------------------")
 

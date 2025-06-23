@@ -4,4 +4,9 @@ langchain
 langchain-openai
 langsmith
 ipykernel
-jupyterlab
+langchain_community
+pypdf
+bs4
+arxiv
+PyMuPDF
+wikipedia

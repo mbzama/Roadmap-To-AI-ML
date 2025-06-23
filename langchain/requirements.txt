@@ -1,5 +1,6 @@
 python-dotenv
 openai
+azure-core
 langchain
 langchain-openai
 langsmith
@@ -10,3 +11,4 @@ bs4
 arxiv
 PyMuPDF
 wikipedia
+chromadb

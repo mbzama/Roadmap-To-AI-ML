@@ -1,5 +1,7 @@
 test.py
 
+faiss_index
+
 # Environment variables
 .env
 .env.local

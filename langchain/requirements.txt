@@ -6,6 +6,7 @@ langchain-openai
 langsmith
 ipykernel
 langchain_community
+langchain-community
 pypdf
 bs4
 arxiv

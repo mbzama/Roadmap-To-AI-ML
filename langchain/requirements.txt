@@ -13,3 +13,5 @@ arxiv
 PyMuPDF
 wikipedia
 chromadb
+sentence-transformers
+langchain_huggingface

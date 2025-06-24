@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from openai import AzureOpenAI
-rom azure.core.credentials import AzureKeyCredential
+from azure.core.credentials import AzureKeyCredential
 
 # Load environment variables
 load_dotenv()

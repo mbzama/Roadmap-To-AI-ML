@@ -1,3 +1,4 @@
+dotenv
 python-dotenv
 openai
 azure-core
@@ -17,3 +18,5 @@ sentence-transformers
 langchain_huggingface
 faiss-cpu
 langchain_chroma
+beautifulsoup4
+langchain-text-splitters

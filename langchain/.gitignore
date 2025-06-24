@@ -1,6 +1,7 @@
 test.py
 
 faiss_index
+chroma_db
 
 # Environment variables
 .env

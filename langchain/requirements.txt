@@ -24,3 +24,5 @@ streamlit
 langchain-groq
 fastapi
 uvicorn
+langserve
+sse_starlette

@@ -21,3 +21,4 @@ langchain_chroma
 beautifulsoup4
 langchain-text-splitters
 streamlit
+langchain-groq

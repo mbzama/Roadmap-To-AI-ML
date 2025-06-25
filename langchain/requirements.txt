@@ -22,3 +22,5 @@ beautifulsoup4
 langchain-text-splitters
 streamlit
 langchain-groq
+fastapi
+uvicorn

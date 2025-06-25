@@ -12,11 +12,12 @@ from fastapi import FastAPI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_groq import ChatGroq
-import os
-from dotenv import load_dotenv
 from langserve import add_routes
 
-load_dotenv()
+import os
+from dotenv import load_dotenv
+
+load_dotenv("../.env")
 
 if "GROQ_API_KEY" not in os.environ:
     raise ValueError("GROQ_API_KEY environment variable is not set.")   

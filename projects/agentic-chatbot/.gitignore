@@ -1,0 +1,23 @@
+#exclude env files and directories
+.env/
+**/.env
+**/.env.*
+
+venv/
+*.log
+*.out
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+*.DS_Store
+.idea/
+*.vscode/
+*.coverage
+.coverage.*

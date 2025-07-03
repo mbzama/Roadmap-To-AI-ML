@@ -2,6 +2,7 @@ langchain
 langgraph
 langchain_community
 langchain_core
+typing-extensions
 langchain_groq
 langchain_openai
 faiss-cpu
